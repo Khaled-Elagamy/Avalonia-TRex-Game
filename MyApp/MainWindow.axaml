@@ -1,0 +1,30 @@
+<Window xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d" d:DesignWidth="{Binding PANEL_WIDTH}" d:DesignHeight="{Binding PANEL_HEIGHT}"
+    x:Class="MyApp.MainWindow"
+    Title="Game"
+		Width="900" Height="470"
+		CanResize="False">
+	
+	<Grid RowDefinitions="*,Auto">
+
+		<Grid Grid.Row="0">
+			<Canvas x:Name="canvas" Width="900" Height="450">
+				<TextBlock x:Name="Score" Canvas.Left="20" Canvas.Top="30" FontSize="14" Text="Press the button to Start"></TextBlock>
+				<Button x:Name="button1" Content="{Binding ButtonText}" Command="{Binding ButtonClicked}"></Button>
+
+				<Rectangle  Fill="Blue" Height="40" Width="5" Canvas.Left="10" Canvas.Bottom="0"/>
+			</Canvas>
+		</Grid>
+
+		<Grid Grid.Row="1">
+
+			<Rectangle Fill="Red" Height="20" Width="900" Canvas.Bottom="0" />
+
+		</Grid>
+	</Grid>
+
+
+</Window>
