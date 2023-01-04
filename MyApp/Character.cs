@@ -22,6 +22,9 @@ namespace MyApp
         private int _Gravity { get; set; }
         private int _score { get; set; }
         private bool _CanJump { get; set; }
+        private bool _right { get; set; }
+        private bool _left { get; set; }
+
         public Image image { get; set; }
 
 
@@ -63,6 +66,14 @@ namespace MyApp
         {
             get => _CanJump;
             set => _CanJump = value;
+        }public bool right
+        {
+            get => _right;
+            set => _right = value;
+        }public bool left
+        {
+            get => _left;
+            set => _left = value;
         }
 
         public Player()

@@ -9,6 +9,7 @@
   </PropertyGroup>
   <ItemGroup>
     <None Remove=".gitignore" />
+    <None Remove="Assets\dead.png" />
   </ItemGroup>
   <ItemGroup>
     <!--This helps with theme dll-s trimming.
@@ -25,11 +26,9 @@
     <PackageReference Include="NAudio" Version="2.1.0" />
     <PackageReference Include="XamlNameReferenceGenerator" Version="1.3.4" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Assets\" />
-  </ItemGroup>
 	<ItemGroup>
-		<AvaloniaResource Include="Assets\*"/>
+		<AvaloniaResource Include="Assets\**" />
 	</ItemGroup>
+	
 	
 </Project>
