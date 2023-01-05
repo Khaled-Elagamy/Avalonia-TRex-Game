@@ -4,6 +4,7 @@ using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using System.ComponentModel;
 using Avalonia.Input;
+using Avalonia.Threading;
 using System;
 using System.IO;
 using SkiaSharp;
@@ -11,7 +12,6 @@ using HarfBuzzSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Avalonia.Controls.Primitives;
 using Microsoft.CodeAnalysis.Text;
-using Avalonia.Threading;
 using System.Reactive;
 using System.Diagnostics;
 using Avalonia.Styling;
@@ -33,43 +33,58 @@ using System.Threading.Tasks;
 using FireAndForgetAudioSample;
 using System.Reflection.PortableExecutable;
 using System.Collections.Concurrent;
+using System.Timers;
 
 namespace MyApp
 {
     public partial class MainWindow : Window
     {
-        private static int elapsedTime;
         // Main Window Objects
         private static Canvas _canvas;
         private static List<Obstacle> _obstacles;
         private static TextBlock scoreText;
+        private static TextBlock TimeText;
         // Game Objects
         private static Player player;
         private static double timesincelastobstacle = 100;
-        //private static int _score=8;
         // Music Objects
         private static WaveOutEvent output;
         private static Task myTask;
         private static ManualResetEvent stopEvent;
-        private CachedSound press_sound = new CachedSound("../../../Assets/buttonpress.wav");
-        private static CachedSound score_reached = new CachedSound("../../../Assets/score-reached.wav");
+        //Static sound objects 
+        private static CachedSound press_sound;
+        private static CachedSound score_reached;
+        //Time Elapsed Objects
+        private static readonly Stopwatch _stopwatch = new Stopwatch();
+        private static readonly DispatcherTimer _timer = new DispatcherTimer();
+        private static readonly TimeSpan _updateInterval = TimeSpan.FromSeconds(1);
+
         public MainWindow()
         {
-
             InitializeComponent();
             DataContext = new MainWindowViewModel();
             Startgame();
+
+            //Check if the window is not in view (Deactivated)
+            Deactivated += (sender, args) =>
+            {
+                //Stop the Player movement
+                player.left = false;
+                player.right = false;
+            };
 
         }
 
         private void Startgame()
         {
+
             player = new Player();
             // Main Window Content
             button1.Focusable = false;
             // scoreText = this.FindControl<TextBlock>("Score");
             // _canvas = this.FindControl<Canvas>("canvas");
             scoreText = Score;
+            TimeText = Time;
             _canvas = canvas;
             _obstacles = new List<Obstacle>();
 
@@ -81,7 +96,6 @@ namespace MyApp
             // Play game music
 
 
-
             myTask.Start();
 
 
@@ -90,7 +104,8 @@ namespace MyApp
         // Play Background music
         public static void playsound()
         {
-
+            press_sound = new CachedSound("../../../Assets/buttonpress.wav");
+            score_reached = new CachedSound("../../../Assets/score-reached.wav");
             output = new WaveOutEvent();
             using (var audio = new AudioFileReader("../../../Assets/main2.wav"))
             {
@@ -114,6 +129,7 @@ namespace MyApp
         // Override The Main Windows Events
         protected override void OnClosed(EventArgs e)
         {
+
             // Release resources of sound
             output.Stop();
             AudioPlaybackEngine.Instance.Dispose();
@@ -123,17 +139,18 @@ namespace MyApp
             // Release resources of Task playing music
             myTask.Wait();
             myTask.Dispose();
-
         }
         protected override void OnKeyDown(KeyEventArgs e)
         {
-
             // Check for user input
             if (e.Key == Key.Space && !player.CanJump && player.yPosition == 0)
             {
                 player.CanJump = true;
                 // Sound of jumping
-                AudioPlaybackEngine.Instance.PlaySound(press_sound);
+                if (_timer.IsEnabled)
+                {
+                    AudioPlaybackEngine.Instance.PlaySound(press_sound);
+                }
             }
             if (e.Key == Key.Down)
             {
@@ -165,10 +182,7 @@ namespace MyApp
             {
                 player.left = false;
             }
-
         }
-
-
         // Main Game
         public class MainWindowViewModel : INotifyPropertyChanged
         {
@@ -193,19 +207,39 @@ namespace MyApp
                 }
             }
             public void ButtonClicked() => ButtonText = "Welcome to my game!";
+            private void GameTimer(bool condition)
+            {
+                if (!_timer.IsEnabled)
+                {
+                    _stopwatch.Reset();
+                }
+                if (condition)
+                {
+                    // Start the timer
+                    _stopwatch.Start();
+                    _timer.Start();
+                }
+                else
+                {
+                    _stopwatch.Stop();
+                    _timer.Stop();
+                }
+                _timer.Interval = _updateInterval;
 
+                _timer.Tick += (sender, args) =>
+                {
+                    TimeText.Text = "TimeElapsed : " + _stopwatch.Elapsed.ToString("mm\\:ss");
+                };
+            }
             //Main game fucntions
             private void MainGame(object sender, EventArgs e)
             {
-                elapsedTime++;
+                //elapsedTime++;
                 timesincelastobstacle++;
-
                 UpdatePLayer();
                 UpdateObstacles();
                 CheckObstacleCollisions();
-
             }
-
             // Check player status 
             private void UpdatePLayer()
             {
@@ -239,7 +273,6 @@ namespace MyApp
                     }
                 }
             }
-
             // Jump
             private void CheckJump()
             {
@@ -273,10 +306,8 @@ namespace MyApp
             // Update Obstacles
             public void UpdateObstacles()
             {
-
                 var rnd = new Random();
                 var obstacle = new Obstacle();
-
                 // Spawning the Obstacles
                 if (rnd.Next(0, (int)(timesincelastobstacle + 50)) > obstacle.SpawnRate)
                 {
@@ -309,7 +340,6 @@ namespace MyApp
                     }
                 }
             }
-
             //Check if the player touches the obstacles
             private void CheckObstacleCollisions()
             {
@@ -327,11 +357,6 @@ namespace MyApp
                     }
                 }
             }
-
-
-
-
-
             // Change the score
             private void UpdateScore()
             {
@@ -344,9 +369,10 @@ namespace MyApp
             // Reset the game when the player touch the obstacles
             public void resetGame()
             {
+                GameTimer(true);
                 if (output.PlaybackState == PlaybackState.Stopped)
                 {
-                    output.Play();
+                    output?.Play();
                 }
                 // Reset the player and score
                 player.Gravity = 12;
@@ -359,8 +385,6 @@ namespace MyApp
                 UpdateScore();
                 // Reset the Obstacles
                 foreach (var obstacle in _obstacles.ToList()) { _canvas.Children.Remove(obstacle.image); _obstacles.Remove(obstacle); }
-                // Restart the game (Sometimes it glitches)
-
                 // Create the timer and run it 
                 if (gameTimer == null)
                 {
@@ -368,171 +392,72 @@ namespace MyApp
                     gameTimer.Interval = TimeSpan.FromMilliseconds(30);
                     gameTimer.Tick += MainGame;
                 }
-
-
                 gameTimer.Start();
-
             }
-
-
-
-
-
             private void GameOver()
             {
-
                 // Stop the timer
                 gameTimer.Stop();
-
                 //Stop the music 
                 output.Stop();
-
-
+                //Stop the Time Elapsed timer
+                GameTimer(false);
                 // Create a new window to display the score
                 var window = new Window
                 {
-
                     CanResize = false,
                     ShowInTaskbar = false,
                     WindowStartupLocation = WindowStartupLocation.CenterOwner,
                     Width = 200,
                     Height = 200,
                     Title = "Score"
-
                 };
-
                 // Create a stack panel to hold the controls
                 var stackPanel = new StackPanel();
-
                 // Create a label to display the score
                 var scoreLabel = new Label
                 {
                     Content = $"Your score: {player.score}"
                 };
-
                 // Add the label to the stack panel
                 stackPanel.Children.Add(scoreLabel);
-
                 // Create a label to display the highest score
                 var highestScoreLabel = new Label
                 {
                     Content = $"Highest score: {player.score}"
                 };
-
                 // Add the label to the stack panel
                 stackPanel.Children.Add(highestScoreLabel);
-
-
                 // Create a button to play again
                 var playAgainButton = new Button
                 {
                     Content = "Play again"
                 };
-
                 //var window = new GameOverWindow();
-                // playAgainButton.Click += PlayAgainButton_Click;
 
-
-
-
-                // Closing window event
-                window.Closing += Window_Closing;
                 // Add a click event handler to the button
                 playAgainButton.Click += (sender, args) =>
                 {
                     window.Close();
-
                 };
-
                 // Add the button to the stack panel
                 stackPanel.Children.Add(playAgainButton);
-
                 // Set the content of the window to the stack panel
                 window.Content = stackPanel;
-
-
                 // Show the window
                 window.Show();
-
-
+                // Closing window event
+                window.Closing += Window_Closing;
             }
-
             private void Window_Closing(object sender, CancelEventArgs e)
             {
                 // Window is being closed by the user or by the button
                 if (!e.Cancel)
                 {
-
                     resetGame();
-
                 }
             }
-
-
-            /*public void Nojump()
-            {
-                if (player.Jump)
-                {
-                    player.Jump = false;
-
-                    player.JumpSpeed = -12;
-                    player.Force -= 1;
-
-                }
-                else
-                {
-                    player.JumpSpeed = 12;
-                }
-            }
-            */
-
-            /*To be removed
-             * public double playerjump
-            {
-                get => Canvas.GetBottom(player.image);
-                set
-                {
-                    Canvas.SetBottom(player.image, value);
-                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(playerjump)));
-                }
-            }
-            */
-
-            /*To be removed
-             * public int playerforce
-            {
-                get => player.Force;
-                set
-                {
-                    player.Force = value;
-                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(playerforce)));
-                }
-            }*/
-            /* public int playerscore
-             {
-                 get => player.score;
-                 set
-                 {
-                     player.score = value;
-                     PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(playerscore)));
-                 }
-             }
-            */
-
-            /* public double CharMove
-             {
-                 get => player.xPosition;
-                 set
-                 {
-                     player.xPosition = value;
-                     PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(CharMove)));
-                 }
-             }
-            */
-
             public event PropertyChangedEventHandler PropertyChanged;
-
-
         }
     }
 }
