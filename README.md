@@ -2,7 +2,7 @@
 
 ## Google-Trex Runner Game
 
-This game is made using `Avalonia` FrameWork in C#
+This game is made using `Avalonia` FrameWork in C# and OOP principles
 
 ### NuGET Packages Used
 
