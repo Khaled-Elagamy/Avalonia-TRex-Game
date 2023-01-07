@@ -14,8 +14,7 @@
 			<Canvas x:Name="canvas" Width="900" Height="450">
 				<TextBlock x:Name="Score" Canvas.Left="20" Canvas.Top="30" FontSize="14" Text="Press the button to Start"></TextBlock>
 				<Button x:Name="button1" Content="{Binding ButtonText}" Command="{Binding ButtonClicked}"></Button>
-
-				<TextBlock x:Name="Time" Canvas.Left="650" Canvas.Top="10" FontSize="14" Text="TimeElapsed : 00:00"></TextBlock>
+				<TextBlock x:Name="Time" Canvas.Left="750" Canvas.Top="10" FontSize="14" Text="TimeElapsed : 00:00"></TextBlock>
 				<Rectangle  Fill="Blue" Height="40" Width="5" Canvas.Left="10" Canvas.Bottom="0"/>
 			</Canvas>
 		</Grid>

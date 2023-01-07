@@ -107,7 +107,7 @@ namespace MyApp
             press_sound = new CachedSound("../../../Assets/buttonpress.wav");
             score_reached = new CachedSound("../../../Assets/score-reached.wav");
             output = new WaveOutEvent();
-            using (var audio = new AudioFileReader("../../../Assets/main2.wav"))
+            using (var audio = new AudioFileReader("../../../Assets/main.mp3"))
             {
                 audio.Volume = 0.1f;
                 output.Init(audio);
